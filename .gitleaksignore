@@ -1,0 +1,2 @@
+# False positive: "DefaultFrankfurterV2URL" constant reference in internal/reference/reference.go
+5354ec4b9211b5430c364b933a0cebbb86ed8cb5:internal/reference/reference.go:generic-api-key:62
