@@ -77,11 +77,13 @@ func run(logger *slog.Logger) error {
 	// --- HTTP server ---
 	apiServer := api.New(st, logger)
 	httpServer := &http.Server{
-		Addr:         cfg.ListenAddr,
-		Handler:      apiServer,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:              cfg.ListenAddr,
+		Handler:           apiServer,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1 MiB
 	}
 
 	// Run HTTP server in background.
