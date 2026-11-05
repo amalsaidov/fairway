@@ -19,8 +19,12 @@ RUN apk add --no-cache ca-certificates tzdata
 
 WORKDIR /app
 
+RUN addgroup -S fairway && adduser -S fairway -G fairway
+
 COPY --from=builder /build/fairway /app/fairway
 COPY corridors.yaml /app/corridors.yaml
+
+USER fairway
 
 EXPOSE 8080
 
