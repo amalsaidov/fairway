@@ -83,7 +83,7 @@ Start Fairway:
 docker compose up
 ```
 
-This starts the Fairway service together with its PostgreSQL dependency.
+This starts the Fairway service together with its PostgreSQL dependency. Docker Compose applies schema.sql automatically on first start. With your own Postgres, apply it once with psql "$DATABASE_URL" -f schema.sql (see docs/deployment.md).
 
 Once the services are running, the API can be checked with:
 
@@ -288,12 +288,12 @@ Used by Docker, orchestration systems, and operators to confirm the service is r
 ```http
 GET /corridors
 ```
-Returns configured corridors and their current state.
+Returns configured corridors with their per-leg verification status.
 
 ```http
 GET /corridors/{id}/history
 ```
-Returns historical measurements for a specific corridor — Fairway's core value isn't just the current reading, it's knowing how a corridor's condition changed over time.
+Returns historical measurements for a specific corridor — Fairway's core value isn't just the current reading, it's knowing how a corridor's condition changed over time. Supports limit (default 50, max 200) and offset query parameters.
 
 ---
 
@@ -311,6 +311,8 @@ Corridor
       ├── loss_pct
       └── integrity_state (usable / degraded / unusable)
 ```
+
+State transitions are recorded in a separate state_change_events table (corridor, from and to state, triggering measurement, and webhook delivery status).
 
 ---
 
@@ -367,8 +369,6 @@ Fairway is intended to be useful both as a monitoring service and as an open-sou
 Good areas for contribution include: additional corridor verification, measurement reliability, database and historical analysis, state-classification logic, API improvements, webhook integrations (e.g. Discord/Slack-formatted payloads), tests, documentation, and additional Stellar assets and corridors.
 
 Before adding a new corridor, please follow the methodology described in [`docs/corridor-verification.md`](docs/corridor-verification.md).
-
-(CONTRIBUTING.md guidelines are being finalized — check back shortly, or open an issue if you want to contribute before it's filled in.)
 
 ---
 
