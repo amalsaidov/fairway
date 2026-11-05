@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -11,15 +12,23 @@ import (
 	"github.com/gofairway/fairway/internal/store"
 )
 
+// Store defines the data access operations required by Server.
+type Store interface {
+	Ping(ctx context.Context) error
+	ListCorridors(ctx context.Context) ([]store.Corridor, error)
+	GetCorridor(ctx context.Context, id int) (*store.Corridor, error)
+	ListMeasurements(ctx context.Context, corridorID, limit, offset int) ([]store.Measurement, error)
+}
+
 // Server is the Fairway HTTP API server.
 type Server struct {
-	store  *store.Store
+	store  Store
 	logger *slog.Logger
 	mux    *http.ServeMux
 }
 
 // New creates a Server and registers all routes.
-func New(st *store.Store, logger *slog.Logger) *Server {
+func New(st Store, logger *slog.Logger) *Server {
 	s := &Server{store: st, logger: logger, mux: http.NewServeMux()}
 	s.routes()
 	return s
@@ -67,11 +76,20 @@ func (s *Server) handleCorridorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limit := queryInt(r, "limit", 50)
+	limit, err := queryInt(r, "limit", 50)
+	if err != nil || limit <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "limit must be greater than 0"})
+		return
+	}
 	if limit > 200 {
 		limit = 200
 	}
-	offset := queryInt(r, "offset", 0)
+
+	offset, err := queryInt(r, "offset", 0)
+	if err != nil || offset < 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "offset must be greater than or equal to 0"})
+		return
+	}
 
 	corridor, err := s.store.GetCorridor(r.Context(), id)
 	if err != nil {
@@ -110,14 +128,15 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 // queryInt reads an integer query parameter with a default value.
-func queryInt(r *http.Request, key string, def int) int {
+// It returns an error if the parameter is present but cannot be parsed as an integer.
+func queryInt(r *http.Request, key string, def int) (int, error) {
 	v := strings.TrimSpace(r.URL.Query().Get(key))
 	if v == "" {
-		return def
+		return def, nil
 	}
 	n, err := strconv.Atoi(v)
-	if err != nil || n < 0 {
-		return def
+	if err != nil {
+		return 0, err
 	}
-	return n
+	return n, nil
 }
