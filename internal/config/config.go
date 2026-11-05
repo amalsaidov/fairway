@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -65,6 +66,13 @@ type AppConfig struct {
 	// HTTP server
 	ListenAddr string
 
+	// Security, CORS, and Rate Limiting
+	CORSAllowedOrigins string  // Comma-separated list of allowed origins or "*" (default: "" - disabled)
+	RateLimitEnabled   bool    // Enable in-memory rate limiting (default: true)
+	RateLimitRPS       float64 // Token refill rate per second per client (default: 10.0)
+	RateLimitBurst     int     // Max bucket token burst capacity per client (default: 30)
+	TrustProxy         bool    // Trust X-Forwarded-For header for client IP (default: false)
+
 	// Corridors loaded from YAML
 	Corridors []CorridorConfig
 }
@@ -72,16 +80,21 @@ type AppConfig struct {
 // Load builds an AppConfig from environment variables and parses the corridors file.
 func Load() (*AppConfig, error) {
 	cfg := &AppConfig{
-		DatabaseURL:      env("DATABASE_URL", ""),
-		HorizonURL:       env("HORIZON_URL", "https://horizon.stellar.org"),
-		SellAmount:       envFloat("SELL_AMOUNT", 100.0),
-		MeasureInterval:  envDuration("MEASURE_INTERVAL", 5*time.Minute),
-		DegradedLossPct:  envFloat("DEGRADED_LOSS_PCT", 2.5),
-		UnusableLossPct:  envFloat("UNUSABLE_LOSS_PCT", 5.0),
-		WebhookURL:       env("WEBHOOK_URL", ""),
-		ReferenceRateURL: env("REFERENCE_RATE_URL", "https://api.frankfurter.dev/v2/rates"),
-		CorridorsFile:    env("CORRIDORS_FILE", "corridors.yaml"),
-		ListenAddr:       env("LISTEN_ADDR", ":8080"),
+		DatabaseURL:        env("DATABASE_URL", ""),
+		HorizonURL:         env("HORIZON_URL", "https://horizon.stellar.org"),
+		SellAmount:         envFloat("SELL_AMOUNT", 100.0),
+		MeasureInterval:    envDuration("MEASURE_INTERVAL", 5*time.Minute),
+		DegradedLossPct:    envFloat("DEGRADED_LOSS_PCT", 2.5),
+		UnusableLossPct:    envFloat("UNUSABLE_LOSS_PCT", 5.0),
+		WebhookURL:         env("WEBHOOK_URL", ""),
+		ReferenceRateURL:   env("REFERENCE_RATE_URL", "https://api.frankfurter.dev/v2/rates"),
+		CorridorsFile:      env("CORRIDORS_FILE", "corridors.yaml"),
+		ListenAddr:         env("LISTEN_ADDR", ":8080"),
+		CORSAllowedOrigins: env("CORS_ALLOWED_ORIGINS", ""),
+		RateLimitEnabled:   envBool("RATE_LIMIT_ENABLED", true),
+		RateLimitRPS:       envFloat("RATE_LIMIT_RPS", 10.0),
+		RateLimitBurst:     envInt("RATE_LIMIT_BURST", 30),
+		TrustProxy:         envBool("TRUST_PROXY", false),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -147,4 +160,28 @@ func envDuration(key string, def time.Duration) time.Duration {
 		return def
 	}
 	return d
+}
+
+func envBool(key string, def bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return def
+	}
+	return b
+}
+
+func envInt(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return def
+	}
+	return n
 }
