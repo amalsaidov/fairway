@@ -9,12 +9,14 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   build:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Check out repository
