@@ -75,7 +75,14 @@ func run(logger *slog.Logger) error {
 	)
 
 	// --- HTTP server ---
-	apiServer := api.New(st, logger)
+	apiServer := api.New(st, logger, api.Config{
+		CORSAllowedOrigins: cfg.CORSAllowedOrigins,
+		RateLimitEnabled:   cfg.RateLimitEnabled,
+		RateLimitRPS:       cfg.RateLimitRPS,
+		RateLimitBurst:     cfg.RateLimitBurst,
+		TrustProxy:         cfg.TrustProxy,
+	})
+	defer apiServer.Close()
 	httpServer := &http.Server{
 		Addr:              cfg.ListenAddr,
 		Handler:           apiServer,
