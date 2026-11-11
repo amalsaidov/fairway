@@ -12,6 +12,7 @@ func TestAssetToCurrency(t *testing.T) {
 		asset string
 		want  string
 	}{
+		// Existing 'C'-suffixed stablecoins
 		{"NGNC", "NGN"},
 		{"USDC", "USD"},
 		{"EURC", "EUR"},
@@ -19,7 +20,25 @@ func TestAssetToCurrency(t *testing.T) {
 		{"KESC", "KES"},
 		{"XLM", "XLM"},
 		{"BRLC", "BRL"},
+		// 'T'-suffixed fiat tokens
+		{"USDT", "USD"},
+		{"EURT", "EUR"},
+		{"IDRT", "IDR"},
+		{"ARST", "ARS"},
+		// Asset-specific fiat token codes
+		{"AUDD", "AUD"},
+		{"XSGD", "SGD"},
+		{"BRLA", "BRL"},
+		// Already-ISO codes pass through unchanged
 		{"USD", "USD"},
+		{"NGN", "NGN"},
+		// Case-insensitivity and whitespace trimming
+		{"usdc", "USD"},
+		{"  EURC  ", "EUR"},
+		{"UsDt", "USD"},
+		// Unknown codes are returned uppercased and trimmed
+		{"ZZZ", "ZZZ"},
+		{"", ""},
 	}
 
 	for _, tt := range tests {

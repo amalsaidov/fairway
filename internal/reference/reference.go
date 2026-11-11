@@ -27,9 +27,16 @@ type Fetcher interface {
 
 // AssetToCurrency maps a Stellar asset code to its underlying fiat / ISO currency code.
 // E.g. NGNC -> NGN, USDC -> USD, EURC -> EUR.
+//
+// Well-established Stellar fiat-pegged assets follow a few naming conventions:
+// a 'C' suffix (USDC, EURC), a 'T' suffix (USDT, EURT, IDRT, ARST), and a
+// handful of asset-specific codes (AUDD, XSGD, BRLA). Explicit cases are listed
+// for the assets whose code does not cleanly reduce to its ISO currency; the
+// generic 'C'-suffix fallback covers the remaining -C stablecoins (e.g. BRLC).
 func AssetToCurrency(code string) string {
 	upper := strings.ToUpper(strings.TrimSpace(code))
 	switch upper {
+	// 'C'-suffixed stablecoins
 	case "NGNC":
 		return "NGN"
 	case "USDC":
@@ -40,6 +47,23 @@ func AssetToCurrency(code string) string {
 		return "GHS"
 	case "KESC":
 		return "KES"
+	// 'T'-suffixed fiat tokens
+	case "USDT":
+		return "USD"
+	case "EURT":
+		return "EUR"
+	case "IDRT":
+		return "IDR"
+	case "ARST":
+		return "ARS"
+	// Asset-specific fiat token codes
+	case "AUDD":
+		return "AUD"
+	case "XSGD":
+		return "SGD"
+	case "BRLA":
+		return "BRL"
+	// Native asset
 	case "XLM":
 		return "XLM"
 	default:
