@@ -32,10 +32,69 @@ Fairway reads configuration strictly from environment variables upon startup (de
 | `MEASURE_INTERVAL` | Duration | `5m` | No | Frequency of measurement cycles as a Go duration string (e.g. `10m`, `15m`, `1h`). |
 | `DEGRADED_LOSS_PCT`| Float | `2.5` | No | Loss percentage threshold ($\ge 2.5\%$) to classify corridor as `degraded`. |
 | `UNUSABLE_LOSS_PCT`| Float | `5.0` | No | Loss percentage threshold ($\ge 5.0\%$) to classify corridor as `unusable`. |
-| `WEBHOOK_URL` | String | `""` (disabled) | No | Destination URL for plain HTTP POST alerts on state change events. |
+| `WEBHOOK_URL` | String | `""` (disabled) | No | Destination URL for HTTP POST alerts on state change events. |
+| `WEBHOOK_FORMAT` | String | `raw` | No | Webhook payload format: `raw` (Fairway's native JSON) or `discord` (Discord embed message). See [Webhook payload formats](#webhook-payload-formats). |
 | `REFERENCE_RATE_URL` | String | `https://api.frankfurter.dev/v2/rates` | No | Frankfurter v2 rates endpoint for independent FX benchmarks. |
 | `CORRIDORS_FILE` | String | `corridors.yaml` | No | Path to YAML file defining corridors to monitor and seed into PostgreSQL. |
 | `LISTEN_ADDR` | String | `:8080` | No | TCP address and port for HTTP API server (`cmd/fairway/main.go`). |
+
+---
+
+## Webhook payload formats
+
+When `WEBHOOK_URL` is set, Fairway POSTs a JSON body on every corridor state
+change. The `WEBHOOK_FORMAT` variable selects how that body is encoded.
+
+### `raw` (default)
+
+Fairway's native payload — suitable for your own endpoint or an integration
+platform:
+
+```json
+{
+  "event": "corridor.state_change",
+  "occurred_at": "2026-10-05T12:30:00Z",
+  "corridor_id": 7,
+  "corridor_name": "NGNC/USDC",
+  "from_state": "usable",
+  "to_state": "unusable",
+  "measurement_id": 42
+}
+```
+
+### `discord`
+
+Formats the event as a [Discord incoming-webhook](https://discord.com/developers/docs/resources/webhook#execute-webhook)
+message so you can post directly to a Discord channel. Point `WEBHOOK_URL` at the
+channel's webhook URL (Channel Settings → Integrations → Webhooks) and set:
+
+```bash
+WEBHOOK_URL=https://discord.com/api/webhooks/<id>/<token>
+WEBHOOK_FORMAT=discord
+```
+
+The body is a single embed whose colour reflects the new state — green for
+`usable`, orange for `degraded`, red for `unusable`, grey otherwise:
+
+```json
+{
+  "embeds": [
+    {
+      "title": "Corridor NGNC/USDC is now unusable",
+      "description": "Integrity state changed from **usable** to **unusable**.",
+      "color": 15158332,
+      "timestamp": "2026-10-05T12:30:00Z",
+      "fields": [
+        { "name": "Corridor", "value": "NGNC/USDC", "inline": true },
+        { "name": "From", "value": "usable", "inline": true },
+        { "name": "To", "value": "unusable", "inline": true }
+      ]
+    }
+  ]
+}
+```
+
+Any value other than `discord` (including unset) uses the `raw` format.
 
 ---
 

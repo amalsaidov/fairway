@@ -135,7 +135,7 @@ func TestScheduler_StateChangeRegression_0d2acf9(t *testing.T) {
 	// Initialize Scheduler
 	refFetcher := reference.NewFrankfurterFetcher(mockFrankfurter.URL)
 	horizonClient := measure.NewHorizonClient(mockHorizon.URL, refFetcher)
-	dispatcher := webhook.NewDispatcher(mockWebhook.URL, logger)
+	dispatcher := webhook.NewDispatcher(mockWebhook.URL, webhook.FormatRaw, logger)
 	sched := New(st, horizonClient, dispatcher, logger, 100.0, 10*time.Second, 2.5, 5.0)
 
 	// ==========================================
@@ -259,7 +259,7 @@ func TestScheduler_MeasureAll_Sequential(t *testing.T) {
 
 	refFetcher := reference.NewFrankfurterFetcher(mockFrankfurter.URL)
 	horizonClient := measure.NewHorizonClient(mockHorizon.URL, refFetcher)
-	dispatcher := webhook.NewDispatcher("", logger)
+	dispatcher := webhook.NewDispatcher("", webhook.FormatRaw, logger)
 
 	sched := New(st, horizonClient, dispatcher, logger, 100.0, 10*time.Second, 2.5, 5.0)
 
@@ -279,7 +279,7 @@ func TestScheduler_RunContextCancel(t *testing.T) {
 	defer mockHorizon.Close()
 
 	horizonClient := measure.NewHorizonClient(mockHorizon.URL, nil)
-	dispatcher := webhook.NewDispatcher("", logger)
+	dispatcher := webhook.NewDispatcher("", webhook.FormatRaw, logger)
 	sched := New(st, horizonClient, dispatcher, logger, 100.0, 100*time.Millisecond, 2.5, 5.0)
 
 	ctx, cancel := context.WithCancel(context.Background())

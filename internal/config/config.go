@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -55,7 +56,8 @@ type AppConfig struct {
 	UnusableLossPct float64 // loss % above which a corridor is "unusable"
 
 	// Webhook
-	WebhookURL string // plain HTTP POST target; empty disables webhooks
+	WebhookURL    string // plain HTTP POST target; empty disables webhooks
+	WebhookFormat string // payload format: "raw" (default) or "discord"
 
 	// Reference rate
 	ReferenceRateURL string // URL template for FX reference rate (optional)
@@ -87,6 +89,7 @@ func Load() (*AppConfig, error) {
 		DegradedLossPct:    envFloat("DEGRADED_LOSS_PCT", 2.5),
 		UnusableLossPct:    envFloat("UNUSABLE_LOSS_PCT", 5.0),
 		WebhookURL:         env("WEBHOOK_URL", ""),
+		WebhookFormat:      webhookFormat(env("WEBHOOK_FORMAT", "raw")),
 		ReferenceRateURL:   env("REFERENCE_RATE_URL", "https://api.frankfurter.dev/v2/rates"),
 		CorridorsFile:      env("CORRIDORS_FILE", "corridors.yaml"),
 		ListenAddr:         env("LISTEN_ADDR", ":8080"),
@@ -129,6 +132,17 @@ func LoadCorridors(path string) ([]CorridorConfig, error) {
 		}
 	}
 	return out, nil
+}
+
+// webhookFormat normalises the WEBHOOK_FORMAT value to a supported format,
+// falling back to "raw" for empty or unrecognised input.
+func webhookFormat(v string) string {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "discord":
+		return "discord"
+	default:
+		return "raw"
+	}
 }
 
 func env(key, def string) string {
