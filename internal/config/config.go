@@ -81,6 +81,11 @@ type AppConfig struct {
 
 // Load builds an AppConfig from environment variables and parses the corridors file.
 func Load() (*AppConfig, error) {
+	webhookFmt, err := webhookFormat(env("WEBHOOK_FORMAT", "raw"))
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &AppConfig{
 		DatabaseURL:        env("DATABASE_URL", ""),
 		HorizonURL:         env("HORIZON_URL", "https://horizon.stellar.org"),
@@ -89,7 +94,7 @@ func Load() (*AppConfig, error) {
 		DegradedLossPct:    envFloat("DEGRADED_LOSS_PCT", 2.5),
 		UnusableLossPct:    envFloat("UNUSABLE_LOSS_PCT", 5.0),
 		WebhookURL:         env("WEBHOOK_URL", ""),
-		WebhookFormat:      webhookFormat(env("WEBHOOK_FORMAT", "raw")),
+		WebhookFormat:      webhookFmt,
 		ReferenceRateURL:   env("REFERENCE_RATE_URL", "https://api.frankfurter.dev/v2/rates"),
 		CorridorsFile:      env("CORRIDORS_FILE", "corridors.yaml"),
 		ListenAddr:         env("LISTEN_ADDR", ":8080"),
@@ -134,14 +139,18 @@ func LoadCorridors(path string) ([]CorridorConfig, error) {
 	return out, nil
 }
 
-// webhookFormat normalises the WEBHOOK_FORMAT value to a supported format,
-// falling back to "raw" for empty or unrecognised input.
-func webhookFormat(v string) string {
+// webhookFormat validates and normalises the WEBHOOK_FORMAT value. It accepts
+// "raw" or "discord" (case-insensitive); an empty value defaults to "raw". Any
+// other value is rejected so a typo (e.g. "discrod") fails fast at startup
+// instead of silently delivering the raw payload.
+func webhookFormat(v string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "", "raw":
+		return "raw", nil
 	case "discord":
-		return "discord"
+		return "discord", nil
 	default:
-		return "raw"
+		return "", fmt.Errorf("unsupported WEBHOOK_FORMAT %q (want \"raw\" or \"discord\")", v)
 	}
 }
 

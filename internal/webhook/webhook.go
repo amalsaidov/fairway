@@ -81,7 +81,9 @@ type Dispatcher struct {
 // Any format other than FormatDiscord (including an empty or unrecognised value)
 // is treated as FormatRaw.
 func NewDispatcher(webhookURL string, format Format, logger *slog.Logger) *Dispatcher {
-	if !strings.EqualFold(string(format), string(FormatDiscord)) {
+	if strings.EqualFold(string(format), string(FormatDiscord)) {
+		format = FormatDiscord
+	} else {
 		format = FormatRaw
 	}
 	return &Dispatcher{

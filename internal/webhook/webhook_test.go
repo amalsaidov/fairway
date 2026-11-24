@@ -337,3 +337,40 @@ func TestNewDispatcher_UnknownFormatDefaultsToRaw(t *testing.T) {
 		t.Errorf("expected corridor_name 'USDC/EURC', got %q", receivedPayload.CorridorName)
 	}
 }
+
+func TestNewDispatcher_MixedCaseDiscordNormalised(t *testing.T) {
+	var body []byte
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	// A mixed-case "Discord" must normalise to FormatDiscord and send an embed,
+	// not slip through to the raw Payload encoding.
+	d := NewDispatcher(ts.URL, Format("Discord"), logger)
+	if d.format != FormatDiscord {
+		t.Fatalf("expected format to normalise to %q, got %q", FormatDiscord, d.format)
+	}
+
+	corridor := store.Corridor{ID: 3, Name: "NGNC/USDC"}
+	event := store.StateChangeEvent{
+		CorridorID: 3,
+		FromState:  store.StateUsable,
+		ToState:    store.StateUnusable,
+		OccurredAt: time.Now(),
+	}
+	if err := d.Dispatch(context.Background(), corridor, event); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var dp discordPayload
+	if err := json.Unmarshal(body, &dp); err != nil {
+		t.Fatalf("response body is not a Discord payload: %v", err)
+	}
+	if len(dp.Embeds) != 1 {
+		t.Fatalf("expected 1 embed, got %d", len(dp.Embeds))
+	}
+}

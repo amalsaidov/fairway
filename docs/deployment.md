@@ -73,6 +73,11 @@ WEBHOOK_URL=https://discord.com/api/webhooks/<id>/<token>
 WEBHOOK_FORMAT=discord
 ```
 
+> **Security:** a Discord webhook URL embeds a secret token (`<token>` above).
+> Anyone with the full URL can post to the channel, so treat it like a
+> credential — keep it in your environment/secret store and never commit or
+> share it.
+
 The body is a single embed whose colour reflects the new state — green for
 `usable`, orange for `degraded`, red for `unusable`, grey otherwise:
 
@@ -94,7 +99,10 @@ The body is a single embed whose colour reflects the new state — green for
 }
 ```
 
-Any value other than `discord` (including unset) uses the `raw` format.
+Only `raw` and `discord` are accepted (case-insensitive); leaving `WEBHOOK_FORMAT`
+unset defaults to `raw`. Any other value (for example a typo like `discrod`) makes
+Fairway fail fast at startup with a configuration error rather than silently
+falling back to `raw`.
 
 ---
 

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PostgreSQL persistence layer managing `corridors`, `measurements`, and `state_change_events` (`internal/store`, `schema.sql`).
 - State-change detection comparing against preceding corridor measurements to prevent redundant notifications (`internal/scheduler`).
 - Plain HTTP POST webhook dispatcher delivering alert payloads on corridor state transitions (`internal/webhook`).
+- Optional Discord-formatted webhook payloads selected via `WEBHOOK_FORMAT` (`raw` default or `discord`), encoding state changes as a colour-coded Discord embed; unsupported values are rejected at startup (`internal/webhook`, `internal/config`).
 - REST API server (`internal/api`) exposing:
   - `GET /healthz` health check with database ping probe.
   - `GET /corridors` listing enabled corridors and metadata.
